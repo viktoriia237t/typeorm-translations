@@ -1,4 +1,4 @@
-# @nestkit-studio/typeorm-translations
+# typeorm-translations
 
 Database-backed translations for NestJS + TypeORM (PostgreSQL).
 
@@ -13,7 +13,7 @@ Entities keep their base columns (`name`, `description`, …) in the default lan
 ## Install
 
 ```bash
-pnpm add @nestkit-studio/typeorm-translations
+pnpm add typeorm-translations
 ```
 
 Peer dependencies: `@nestjs/common`, `@nestjs/core`, `@nestjs/typeorm`, `typeorm`, `rxjs`, `reflect-metadata`.
@@ -49,7 +49,7 @@ export class Product {
 Add `Translation` to your TypeORM `entities` (and to your migration data source) and create the table in a migration:
 
 ```ts
-import { createTranslationsTable, dropTranslationsTable } from '@nestkit-studio/typeorm-translations';
+import { createTranslationsTable, dropTranslationsTable } from 'typeorm-translations';
 
 export class CreateTranslations1700000000000 implements MigrationInterface {
   up = (q: QueryRunner) => createTranslationsTable(q);   // Postgres 13+ (gen_random_uuid)
