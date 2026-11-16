@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nestkit-studio/typeorm-translations.git"
+    "url": "git+https://github.com/viktoriia237t/typeorm-translations.git"
   },
   "publishConfig": {
     "access": "public"
@@ -56,5 +56,9 @@
     "typeorm": "^0.3.28",
     "typescript": "^5.9.3"
   },
-  "author": "Viktoriia Shakhova <viktori237t@gmail.com>"
+  "author": "Viktoriia Shakhova <viktori237t@gmail.com>",
+  "homepage": "https://github.com/viktoriia237t/typeorm-translations#readme",
+  "bugs": {
+    "url": "https://github.com/viktoriia237t/typeorm-translations/issues"
+  }
 }
