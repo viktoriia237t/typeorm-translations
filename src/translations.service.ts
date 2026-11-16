@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { TRANSLATIONS_OPTIONS } from './constants';
 import { getTranslatableMeta } from './decorators';
 import { ResolvedTranslationsOptions } from './interfaces';
@@ -72,6 +72,54 @@ export class TranslationsService {
     const result: Record<string, Record<string, string>> = {};
     for (const row of rows) (result[row.field] ??= {})[row.locale] = row.value;
     return result;
+  }
+
+  /**
+   * SQL-вираз `COALESCE(переклад, базове значення)` для WHERE / ORDER BY за перекладеним полем.
+   * Сам додає LEFT JOIN на translations (один раз на поле й мову; рядків не множить, бо
+   * (entity, entity_id, field, locale) унікальний). Для основної мови повертає звичайну колонку.
+   * Лише Postgres: id порівнюється як varchar.
+   *
+   *   qb.andWhere(`${translations.column(qb, 'p', 'name')} ILIKE :q`, { q: '%milk%' });
+   *
+   * Для сортування краще orderBy(): сирий вираз в orderBy() ламає skip/take.
+   */
+  column(qb: SelectQueryBuilder<any>, alias: string, field: string, locale = this.getLocale()): string {
+    const base = `${alias}.${field}`;
+    if (locale === this.options.defaultLocale) return base;
+
+    const metadata = qb.expressionMap.findAliasByName(alias).metadata;
+    const meta = typeof metadata.target === 'function' ? getTranslatableMeta(metadata.target.prototype) : null;
+    if (!meta?.fields.includes(field)) {
+      throw new Error(`${alias}.${field} is not a @Translatable field of a @TranslatableEntity`);
+    }
+
+    const join = `tr_${alias}_${field}_${locale}`.replace(/\W/g, '_');
+    if (!qb.expressionMap.joinAttributes.some((j) => j.alias.name === join)) {
+      const idColumn = metadata.primaryColumns[0].propertyName;
+      qb.leftJoin(
+        Translation,
+        join,
+        `${join}.entity = :${join}_entity AND ${join}.entity_id = CAST(${alias}.${idColumn} AS varchar)` +
+          ` AND ${join}.field = :${join}_field AND ${join}.locale = :${join}_locale`,
+        { [`${join}_entity`]: meta.entity, [`${join}_field`]: field, [`${join}_locale`]: locale },
+      );
+    }
+    return `COALESCE(${join}.value, ${base})`;
+  }
+
+  /** Сортування за перекладеним полем; працює разом із skip/take. Додає ORDER BY (як addOrderBy). */
+  orderBy(
+    qb: SelectQueryBuilder<any>,
+    alias: string,
+    field: string,
+    direction: 'ASC' | 'DESC' = 'ASC',
+    locale = this.getLocale(),
+  ): SelectQueryBuilder<any> {
+    const expression = this.column(qb, alias, field, locale);
+    if (expression === `${alias}.${field}`) return qb.addOrderBy(expression, direction);
+    const sortAlias = `${alias}_${field}_${locale}_sort`.replace(/\W/g, '_');
+    return qb.addSelect(expression, sortAlias).addOrderBy(sortAlias, direction);
   }
 
   private collect(value: unknown, found: Map<string, Bucket>, seen: WeakSet<object>): void {

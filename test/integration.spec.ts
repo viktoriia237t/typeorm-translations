@@ -160,3 +160,72 @@ describeDb('migration helpers', () => {
     }
   });
 });
+
+describeDb('column() for filtering and sorting', () => {
+  let app: INestApplication;
+  let items: Repository<Item>;
+  let translations: TranslationsService;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot({ type: 'postgres', url, entities: [Item, Translation], synchronize: true, dropSchema: true }),
+        TypeOrmModule.forFeature([Item]),
+        TranslationsModule.forRoot({ defaultLocale: 'uk', locales: ['uk', 'en'] }),
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    items = moduleRef.get<Repository<Item>>(getRepositoryToken(Item));
+    translations = app.get(TranslationsService);
+
+    const [apple, pear, milk] = await items.save([
+      items.create({ name: 'яблуко' }),
+      items.create({ name: 'груша' }),
+      items.create({ name: 'молоко' }),
+    ]);
+    await translations.set('item', apple.id, 'en', { name: 'apple' });
+    await translations.set('item', milk.id, 'en', { name: 'milk' });
+    void pear; // без перекладу: лишається 'груша'
+  });
+
+  afterAll(() => app.close());
+
+  const sorted = (locale: string) => {
+    const qb = items.createQueryBuilder('i');
+    return translations.orderBy(qb, 'i', 'name', 'ASC', locale).getMany();
+  };
+
+  it('sorts by the translated value, falling back to the base one', async () => {
+    expect((await sorted('en')).map((i) => i.name)).toEqual(['яблуко', 'молоко', 'груша']); // apple, milk, груша: латиниця перед кирилицею
+  });
+
+  it('sorts by the base column for the default locale', async () => {
+    expect((await sorted('uk')).map((i) => i.name)).toEqual(['груша', 'молоко', 'яблуко']);
+  });
+
+  it('filters by the translated value and by the fallback', async () => {
+    const qb = items.createQueryBuilder('i');
+    const found = await qb.where(`${translations.column(qb, 'i', 'name', 'en')} ILIKE :q`, { q: '%l%' }).getMany();
+    expect(found.map((i) => i.name)).toEqual(['яблуко', 'молоко']); // apple, milk; 'груша' без перекладу не містить l
+  });
+
+  it('reuses one join when called twice and does not duplicate rows', async () => {
+    const qb = items.createQueryBuilder('i');
+    const a = translations.column(qb, 'i', 'name', 'en');
+    const b = translations.column(qb, 'i', 'name', 'en');
+    expect(a).toBe(b);
+    expect(await qb.where(`${a} IS NOT NULL`).andWhere(`${b} <> ''`).getCount()).toBe(3);
+  });
+
+  it('works with pagination', async () => {
+    const qb = items.createQueryBuilder('i');
+    const page = await translations.orderBy(qb, 'i', 'name', 'ASC', 'en').skip(1).take(1).getMany();
+    expect(page.map((i) => i.name)).toEqual(['молоко']);
+  });
+
+  it('rejects fields that are not translatable', () => {
+    const qb = items.createQueryBuilder('i');
+    expect(() => translations.column(qb, 'i', 'color', 'en')).toThrow(/not a @Translatable/);
+  });
+});

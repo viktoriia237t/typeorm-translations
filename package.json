@@ -2,10 +2,28 @@
   "name": "@nestkit-studio/typeorm-translations",
   "version": "0.1.0",
   "description": "Database-backed translations for NestJS + TypeORM: a translations table, locale from ?lang / Accept-Language, automatic substitution in responses",
-  "private": true,
+  "license": "MIT",
+  "keywords": [
+    "nestjs",
+    "typeorm",
+    "translations",
+    "i18n",
+    "localization",
+    "translatable",
+    "postgres"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nestkit-studio/typeorm-translations.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "test": "jest",

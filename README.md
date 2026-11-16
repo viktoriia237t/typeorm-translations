@@ -88,6 +88,19 @@ Skip the substitution:
 list() { return this.repo.find(); }   // always the base values
 ```
 
+## Filtering and sorting
+
+Translations live in their own table, so filtering and sorting need a join. `column()` adds it (once per field and locale) and returns a `COALESCE(translation, base value)` expression, so rows without a translation fall back to the base value:
+
+```ts
+const qb = repo.createQueryBuilder('p');
+qb.where(`${translations.column(qb, 'p', 'name')} ILIKE :q`, { q: '%milk%' });
+translations.orderBy(qb, 'p', 'name', 'ASC');   // also fine with skip() / take()
+const products = await qb.skip(0).take(20).getMany();
+```
+
+The locale is the current request's; pass one as the last argument to override it. For the default locale both helpers use the plain column and add no join. Postgres only (ids are compared as `varchar`).
+
 ## Options
 
 | option | default | |
@@ -100,7 +113,18 @@ list() { return this.repo.find(); }   // always the base values
 
 - Only entity **instances** are translated. Objects you build by hand (`{ name: p.name }`) are left alone: call `translate()` on the entity before mapping.
 - Substitution mutates the entity instances in the response. Don't `save()` an entity after it went through `translate()`.
-- Searching or sorting by a translated field is not covered: join `translations` yourself, or search the base column.
+
+## How it differs from other packages
+
+`nestjs-translatable` and `@nestbolt/translatable` keep every language in a JSON column (`{"en": "...", "uk": "..."}`) on the entity itself. This package uses one shared `translations` table instead (`entity`, `entity_id`, `field`, `locale`, `value`):
+
+- adding a language adds rows, not columns or migrations, and existing columns stay as they are (the base column keeps the default language);
+- no JSON columns and no per-entity translation classes (`typeorm-translatable`);
+- trade-off: Postgres only, and filtering or sorting goes through a join (see above) rather than a JSON expression.
+
+## License
+
+MIT
 
 ## Development
 
