@@ -19,6 +19,15 @@ pnpm add github:viktoriia237t/typeorm-translations#v0.1.0
 # or: npm install github:viktoriia237t/typeorm-translations#v0.1.0
 ```
 
+pnpm skips install scripts by default, so allow this package to build itself, in `pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  typeorm-translations: true
+```
+
+(older pnpm: `"pnpm": { "onlyBuiltDependencies": ["typeorm-translations"] }` in `package.json`). npm needs nothing extra.
+
 Peer dependencies: `@nestjs/common`, `@nestjs/core`, `@nestjs/typeorm`, `typeorm`, `rxjs`, `reflect-metadata`.
 
 ## Setup
