@@ -1,6 +1,6 @@
 {
   "name": "typeorm-translations",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Database-backed translations for NestJS + TypeORM: a translations table, locale from ?lang / Accept-Language, automatic substitution in responses",
   "license": "MIT",
   "keywords": [
@@ -26,7 +26,6 @@
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
-    "prepare": "tsc -p tsconfig.build.json",
     "test": "jest",
     "prepublishOnly": "pnpm test && pnpm build"
   },
