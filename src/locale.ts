@@ -26,7 +26,7 @@ export function resolveLocale(
         .split(',')
         .map((part, index) => ({
           tag: part.split(';')[0].trim(),
-          q: Number(/q=([\d.]+)/.exec(part)?.[1] ?? 1),
+          q: Number(/q=([\d.]+)/.exec(part)?.[1] ?? 1) || 0, // нечислове q (q=1.2.3) = найнижчий пріоритет
           index,
         }))
         .sort((a, b) => b.q - a.q || a.index - b.index)

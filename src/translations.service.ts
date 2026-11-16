@@ -116,6 +116,7 @@ export class TranslationsService {
     direction: 'ASC' | 'DESC' = 'ASC',
     locale = this.getLocale(),
   ): SelectQueryBuilder<any> {
+    if (direction !== 'ASC' && direction !== 'DESC') throw new Error(`Invalid sort direction: ${String(direction)}`);
     const expression = this.column(qb, alias, field, locale);
     if (expression === `${alias}.${field}`) return qb.addOrderBy(expression, direction);
     const sortAlias = `${alias}_${field}_${locale}_sort`.replace(/\W/g, '_');

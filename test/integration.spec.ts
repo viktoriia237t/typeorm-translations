@@ -224,6 +224,11 @@ describeDb('column() for filtering and sorting', () => {
     expect(page.map((i) => i.name)).toEqual(['молоко']);
   });
 
+  it('rejects anything but ASC/DESC as a direction', () => {
+    const qb = items.createQueryBuilder('i');
+    expect(() => translations.orderBy(qb, 'i', 'name', 'ASC; DROP TABLE items' as any, 'en')).toThrow(/Invalid sort direction/);
+  });
+
   it('rejects fields that are not translatable', () => {
     const qb = items.createQueryBuilder('i');
     expect(() => translations.column(qb, 'i', 'color', 'en')).toThrow(/not a @Translatable/);
